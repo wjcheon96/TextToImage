@@ -1,34 +1,16 @@
 import customtkinter as ctk
-from CTkColorPicker import *
+# from CTkColorPicker import *
 from tkinter import *
-from tkinter import filedialog
-from tkinter import colorchooser
+from tkinter import filedialog, colorchooser, messagebox
 from PIL import Image, ImageDraw, ImageFont
 import os
 import csv
 
-
-app = ctk.CTk()
-ctk.set_appearance_mode("dark")
-app.geometry("800x600")
-app.title("고전어학당 이미지 자동생성")
 data_lines = []
-colors = ["", "", ""]
+colors = [((43, 43, 43), "#2b2b2b"), ((43, 43, 43), "#2b2b2b"), ((43, 43, 43), "#2b2b2b")]
 letter_spacing = -10
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
-
-def openFile():
-    global data_lines
-    initial_dir = os.path.join(script_dir, "relative_folder")
-
-    filepath = filedialog.askopenfilename(initialdir=initial_dir, filetypes=(("csv files", "*.csv"), ("csv files", "*.CSV")))
-    if (filepath):
-        fileStr.set(filepath)
-        with open(filepath, 'r', newline='') as file:
-            csv_reader = csv.reader(file)
-            data_lines = [[cell.strip() if isinstance(cell, str) else cell for cell in row] for row in csv_reader]
-    file.close()
 
 
 def insert_text(image, text, position, font_path, font_size, text_color):
@@ -57,10 +39,10 @@ def MakeFile2(result_image, s1, s2):
 
     font = ImageFont.truetype(font_path, font_size)
     textLength = font.getlength(s1) + letter_spacing * (len(s1) - 1)
-    print(textLength, (width - textLength) / 2)
     insert_text(result_image, s1, ((width - textLength) / 2, height / 2 - 400 // 2 - 242 / 2), font_path, font_size, text_color1)
     textLength = font.getlength(pronounce) + letter_spacing * (len(s2) - 1)
     insert_text(result_image, pronounce, ((width - textLength) / 2, height / 2 + 400 // 2 - 242 / 2), font_path, font_size, text_color2)
+
 
 def MakeFile1(result_image, s1, s2, prefix):
     font_path = os.path.join(script_dir, "asset", "NeoExtraBold.ttf")
@@ -68,7 +50,7 @@ def MakeFile1(result_image, s1, s2, prefix):
     front_color = "#f3a530"
     back_color = "#f9c87d"
 
-    arrow_color = colors[1]
+    arrow_color = colors[1][1]
     arrow_color = tuple(int(arrow_color[i:i+2], 16) for i in (1, 3, 5))
 
     font = ImageFont.truetype(font_path, font_size)
@@ -78,35 +60,76 @@ def MakeFile1(result_image, s1, s2, prefix):
     height = 2048
     draw.text(((width)/2, (height)/2), "↕", font=font, fill=arrow_color, anchor='mm')
 
-    s1length = font.getlength(s1)
-    s2length = font.getlength(s2)
+    global letter_spacing
+
+    s1length = font.getlength(s1) + letter_spacing * (len(s1) - 1)
+    s2length = font.getlength(s2) + letter_spacing * (len(s2) - 1)
+
+    prefixLocation = (width - s1length) / 2
 
     i = 0
+    flag = TRUE
     if (s1length >= s2length): 
-        x1, y1 = (width - s1length) / 2, height / 2 - 700 // 2 - 242 / 2
+        x1, y1 = (width - s1length) / 2, height / 2 - 780 // 2 - 242 / 2
+        y2 = height / 2 + 780 // 2 - 242 / 2
         for char in s1:
-            if char == prefix[i]:
+            if prefix[0] == char and flag:
+                prefixLocation = x1
+                flag = FALSE
+            if i < len(prefix) and char == prefix[i]:
                 text_color = front_color
+                i += 1
             else:
                 text_color = back_color
             char_width = draw.textlength(char, font=font)
+            draw.text((x1, y1), char, font=font, fill=text_color)
             x1 += char_width + letter_spacing
-            if i < len(prefix):
+        i = 0
+        for char in s2:
+            if i < len(prefix) and char == prefix[i]:
+                text_color = front_color
+            else:
+                text_color = back_color
+            i += 1
+            char_width = draw.textlength(char, font=font)
+            draw.text((prefixLocation, y2), char, font=font, fill=text_color)
+            prefixLocation += char_width + letter_spacing
+    else:
+        x2, y2 = (width - s2length) / 2, height / 2 - 700 // 2 - 242 / 2
+        y1 = height / 2 + 780 // 2 - 242 / 2
+        for char in s2:
+            if prefix[0] == char and flag:
+                prefixLocation = x2
+                flag = FALSE
+            if i < len(prefix) and char == prefix[i]:
+                text_color = front_color
+            else:
+                text_color = back_color
+            i += 1
+            char_width = draw.textlength(char, font=font)
+            draw.text((x2, y2), char, font=font, fill=text_color)
+            x2 += char_width + letter_spacing
+        i = 0
+        for char in s1:
+            if i < len(prefix) and char == prefix[i]:
+                text_color = front_color
                 i += 1
-        x2, y2 = (width - s1length) / 2, height / 2 + 700 // 2 - 242 / 2
-
-    # else:
-    #     x1, y1 = (width - s2length) / 2, height / 2 - 700 // 2 - 242 / 2
-    #     for char in s1:
-    #         char_width = draw.textlength(char, font=font)
-    #         x1 += char_width + letter_spacing
-    #     x2, y2 = (width - s2length) / 2, height / 2 + 700 // 2 - 242 / 2
+            else:
+                text_color = back_color
+            char_width = draw.textlength(char, font=font)
+            draw.text((prefixLocation, y1), char, font=font, fill=text_color)
+            prefixLocation += char_width + letter_spacing
 
 
 def submitOnClick():
     global data_lines
     width, height = 2048, 2048
-    bg_color = colors[0]
+    if not data_lines:
+        messagebox.showinfo("경고", "파일이 선택되지 않았습니다")
+        return
+
+
+    bg_color = colors[0][1]
     background_color_rgb = tuple(int(bg_color[i:i+2], 16) for i in (1, 3, 5))
 
     background_image_path = os.path.join(script_dir, "asset", "bg_image.png")
@@ -131,87 +154,128 @@ def submitOnClick():
     font_path = os.path.join(script_dir, "asset", "NeoHeavy.ttf")
     font_size = 93
 
-    text1_color = colors[1]
-    text2_color = colors[2]
+    text1_color = colors[1][1]
+    text2_color = colors[2][1]
     text1_color = tuple(int(text1_color[i:i+2], 16) for i in (1, 3, 5))
     text2_color = tuple(int(text2_color[i:i+2], 16) for i in (1, 3, 5))
 
     insert_text(result_image, defaultText, position1, font_path, font_size, text1_color)
+    
+    try:
+        for row in data_lines:
+            output_folder = os.path.join(script_dir, "result", row[1])
+            os.makedirs(output_folder, exist_ok=True)
 
-    for row in data_lines:
-        output_folder = os.path.join(script_dir, "result", row[1])
-        os.makedirs(output_folder, exist_ok=True)
+            new_result_image1 = result_image.copy()
+            new_result_image2 = result_image.copy()
 
-        new_result_image1 = result_image.copy()
-        new_result_image2 = result_image.copy()
+            insert_text(new_result_image1, row[0], position2, font_path, font_size, text2_color)
+            insert_text(new_result_image2, row[0], position2, font_path, font_size, text2_color)
 
-        insert_text(new_result_image1, row[0], position2, font_path, font_size, text2_color)
-        insert_text(new_result_image2, row[0], position2, font_path, font_size, text2_color)
+            MakeFile1(new_result_image1, row[1], row[2], row[4])
+            MakeFile2(new_result_image2, row[1], row[3])
 
-        MakeFile1(new_result_image2, row[1], row[2], row[4])
-        # MakeFile2(new_result_image2, row[1], row[3])
+            fileName1 = row[1] + "_1.png"
+            output_path = os.path.join(output_folder, fileName1)
+            new_result_image1.save(output_path)
 
-        # fileName1 = row[1] + "_1.png"
-        # output_path = os.path.join(output_folder, fileName1)
-        # new_result_image1.save(output_path)
-
-        # fileName2 = row[1] + "_2.png"
-        # output_path = os.path.join(output_folder, fileName2)
-        # new_result_image2.save(output_path)
-        # print("텍스트 삽입 완료")
-
-
-
-fileOpenButton = ctk.CTkButton(app, text="Open", command=openFile)
-fileOpenButton.pack()
-
-fileStr=StringVar()
-fileLabel = ctk.CTkLabel(app, textvariable=fileStr)
-fileStr.set("file...")
-fileLabel.pack()
-
-# def ask_color(button, index):
-#     pick_color = AskColor()  # open the color picker
-#     my_color = pick_color.get()  # get the color string
-#     if my_color is not None:
-#         colors[index] = my_color
-#     button.configure(fg_color=my_color)
-
-# # 앱을 생성하고 초기화하는 코드 (생략)
-
-# bgColorButton = ctk.CTkButton(app, text="배경", command=lambda: ask_color(bgColorButton, 0))
-# bgColorButton.pack(padx=30, pady=20)
-
-# meanColorButton = ctk.CTkButton(app, text="뜻 색", command=lambda: ask_color(meanColorButton, 1))
-# meanColorButton.pack(padx=30, pady=20)
-
-# arrowColorButton = ctk.CTkButton(app, text="화살표색", command=lambda: ask_color(arrowColorButton, 2))
-# arrowColorButton.pack(padx=30, pady=20)
-
-# submitButton = ctk.CTkButton(app, text="제출", command=submitOnClick)
-# submitButton.pack(padx=30, pady=20)
+            fileName2 = row[1] + "_2.png"
+            output_path = os.path.join(output_folder, fileName2)
+            new_result_image2.save(output_path)
+        messagebox.showinfo("성공", "변환 완료")
+    except IndexError:
+        messagebox.showinfo("실패", "csv 파일 내부 형식이 잘못되었습니다")
 
 
-def color(index):
-    global colors 
-    my_color = colorchooser.askcolor()
-    if my_color[1] is not None: 
-        colors[index] = my_color[1]  
-        update_label() 
+app = ctk.CTk()
+app.geometry("400x300")
+ctk.set_appearance_mode("dark")
+app.title("고전어학당 이미지 자동생성")
 
-def update_label():
-    colors_str = ", ".join(colors)
-    my_label.config(text=f"Selected Colors: {colors_str}")
+class fileSegment(ctk.CTkFrame):
+    def __init__(self, parent, label_text, button_text, onClickCommand):
+        super().__init__(master=parent)
 
-for i in range(3):
-    button = Button(app, text=f"Choose Color {i+1}", command=lambda i=i: color(i))
-    button.pack(pady=10)
+        # grid layout 
+        self.rowconfigure(0, weight=1)
+        self.columnconfigure((0, 1, 2), weight=1, uniform='a')
+        
+        # widgets 
+        self.label = ctk.CTkLabel(self, text=label_text)
+        self.label.grid(row=0, column=0)
 
-my_label = Label(app, text="Selected Colors:")
-my_label.pack()
+        self.button = ctk.CTkButton(self, text=button_text, command=onClickCommand)
+        self.button.grid(row=0, column=1)
 
-button = Button(app, text="제출", command=submitOnClick)
-button.pack()
+        self.fileName = ctk.CTkLabel(self, text="file...", width=150)
+        self.fileName.grid(row=0, column=2)
+
+        self.pack(expand=False, fill='both', padx=10, pady=30)
+
+
+class Segment(ctk.CTkFrame):
+    def __init__(self, parent, label_text, button_text, onClickCommand, idx):
+        super().__init__(master=parent)
+
+        # grid layout 
+        self.rowconfigure(0, weight=1)
+        self.columnconfigure((0, 1, 2), weight=1, uniform='a')
+        
+        # widgets 
+        self.label = ctk.CTkLabel(self, text=label_text)
+        self.label.grid(row=0, column=0, sticky='nsew')
+
+        self.button = ctk.CTkButton(self, text=button_text, command=onClickCommand)
+        self.button.grid(row=0, column=1, sticky='nsew')
+
+        self.colorLabel = ctk.CTkLabel(self, text="", fg_color="#2b2b2b", corner_radius=5)
+        self.colorLabel.grid(row=0, column=2, sticky='nsew')
+
+        self.pack(expand=False, fill='both', padx=10, pady=10)
+
+def create_color_callback(index):
+    def ask_color():
+        global colors
+        prev_color = colors[index]
+        pick_color = colorchooser.askcolor() # open the color picker
+        if pick_color is not None:
+            if pick_color[0] is None:  # If user cancels color selection
+                colors[index] = prev_color
+            else:
+                colors[index] = pick_color
+            if (index == 0):
+                segment1.colorLabel.configure(text=colors[index][1], fg_color=colors[index][1])
+            elif (index == 1):
+                segment2.colorLabel.configure(text=colors[index][1], fg_color=colors[index][1])
+            elif (index == 2):
+                segment3.colorLabel.configure(text=colors[index][1], fg_color=colors[index][1])
+    return ask_color
+
+def selectFile():
+    def openFile():
+        global data_lines
+        initial_dir = os.path.join(script_dir, "relative_folder")
+        filepath = filedialog.askopenfilename(initialdir=initial_dir, filetypes=(("csv files", "*.csv"), ("csv files", "*.CSV")))
+        if (filepath):
+            segment.fileName.configure(text=filepath)
+            with open(filepath, 'r', newline='') as file:
+                csv_reader = csv.reader(file)
+                data_lines = [[cell.strip() if isinstance(cell, str) else cell for cell in row] for row in csv_reader]
+        file.close()
+    return openFile
+
+segment = fileSegment(app, "파일 선택", "선택", selectFile())
+
+segment1 = Segment(app, "배경", "선택", create_color_callback(0), 0)
+segment2 = Segment(app, "뜻", "선택",  create_color_callback(1), 1)
+segment3 = Segment(app, "화살표", "선택", create_color_callback(2), 2)
+
+segment1.button.configure(command=create_color_callback(0))
+segment2.button.configure(command=create_color_callback(1))
+segment3.button.configure(command=create_color_callback(2))
+
+submitButton = ctk.CTkButton(app, text="제출", command=submitOnClick, width=120)
+submitButton.pack(padx=30, pady=20)
 
 app.mainloop()
 
